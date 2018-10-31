@@ -25,7 +25,10 @@ using namespace std;
     cout << "Capacity: " << inpSt->capacity << endl;\
     cout << "Count: " << inpSt->count << endl;\
     cout << "Data: " << inpSt->data << endl;\
-    cout << "Canary1: " << *inpSt->dat_can1 << endl;\
+    cout << "\x1b[033mCanary1:\x1b[0m ";\
+    if(*inpSt->dat_can1 == 0xBEDABEDA) cout << "\x1b[32m"; else cout << "\x1b[31m";\
+    cout << *inpSt->dat_can1 << "\x1b[0m" << endl;\
+    \
     for (unsigned i = 0; i < inpSt->capacity; i++)\
 {\
     printf("[%d] = ", i);\
@@ -36,18 +39,14 @@ using namespace std;
     printf("%d\n", inpSt->data[i]);\
     printf("\x1b[0m");\
     }\
-    cout << "Canary2: " << *inpSt->dat_can2 << endl;\
+    \
+    cout << "\x1b[033mCanary2:\x1b[0m ";\
+    if(*inpSt->dat_can2 == 0xBEDABEDA) cout << "\x1b[32m"; else cout << "\x1b[31m";\
+    cout << *inpSt->dat_can2 << "\x1b[0m" << endl;\
     cout << "-------------------------------------------------------" << "\n" <<endl;\
     }
 
-#define ASSERT_OK(inp, reason)\
-{\
-    if (inp)\
-{\
-    Stack_dump(inpSt, reason);\
-    assert(inp);\
-    }\
-    }
+#define ASSERT_OK(inpSt, reason) if(Stack_OK(inpSt) != 0) {Stack_dump(inpSt, reason); assert(!reason);}
 
 struct Stack
 {
@@ -119,7 +118,7 @@ int Stack_OK(Stack *inpSt)
         return 5;
     else if (inpSt->dat_sum != calc_dat_sum(inpSt))
         return 6;
-    else if ( !(inpSt->count >= inpSt->capacity-1) )
+    else if ( inpSt->count > inpSt->capacity )
         return 7;
     else if (inpSt->data == nullptr)
         return 8;
@@ -209,26 +208,28 @@ void expand_stk(Stack *inpSt, uint8_t isExp)
 void Push_back(Stack *inpSt, unsigned val)
 {
     assert(inpSt != nullptr);
-    //cout << calc_stk_sum(inpSt) << endl;
-    ASSERT_OK(Stack_OK(inpSt) != 0, "Push_back_before");
-    if (Stack_OK(inpSt) != 0)
-        if(inpSt->count == inpSt->capacity)
-            expand_stk(inpSt, 1);
+    ASSERT_OK(inpSt, "Push_back_before");
+    if(inpSt->count == inpSt->capacity)
+        expand_stk(inpSt, 1);
     inpSt->data[inpSt->count] = val;
     inpSt->count++;
     write_control_sums(inpSt);
-    ASSERT_OK(Stack_OK(inpSt) != 0, "Push_back_after");
+    ASSERT_OK(inpSt, "Push_back_after");
 }
 
 unsigned Pop_back(Stack *inpSt)
 {
     assert(inpSt != nullptr);
     assert(inpSt->count != 0);
+    ASSERT_OK(inpSt, "Pop_back_before");
 
     unsigned tmp = inpSt->data[--inpSt->count];
     inpSt->data[inpSt->count] = 555;
     if( (inpSt->capacity != 1) && (inpSt->count == inpSt->capacity/2) )
         expand_stk(inpSt, 0);
+
+    write_control_sums(inpSt);
+    ASSERT_OK(inpSt, "Pop_back_after");
     return tmp;
 }
 
@@ -265,5 +266,17 @@ int main()
     Push_back(&st, 1);
     Push_back(&st, 2);
     Push_back(&st, 3);
+    Push_back(&st, 4);
+    Push_back(&st, 5);
+    Push_back(&st, 6);
+    Push_back(&st, 7);
+    UNITTEST(Pop_back(&st), ==, 7);
+    UNITTEST(Pop_back(&st), ==, 6);
+    UNITTEST(Pop_back(&st), ==, 5);
+    UNITTEST(Pop_back(&st), ==, 4);
+    UNITTEST(Pop_back(&st), ==, 3);
+    UNITTEST(Pop_back(&st), ==, 2);
+    UNITTEST(Pop_back(&st), ==, 6);
+    UNITTEST(Pop_back(&st), ==, 0);
     return 0;
 }
