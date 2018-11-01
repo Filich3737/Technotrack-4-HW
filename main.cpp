@@ -1,10 +1,23 @@
+/**
+  *@file
+  * @author Philip Khristolyubov
+  * @version 1.0
+  * @date 01.11.2018
+  * @brief Третье домашнее задание по курсу "Введение в промышленное программирование и структуры данных"
+  * @todo
+  */
+
 #include <iostream>
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
 
-using namespace std;
-
+/**
+ * @brief Unit test define
+ * @param what expression to test
+ * @param op operand to use with expression
+ * @param ref reference (what should expression be?)
+ */
 #define UNITTEST(what, op, ref)                                                                                     \
 {                                                                                                                   \
     auto result = (what);                                                                                           \
@@ -15,6 +28,11 @@ using namespace std;
     cout << #what << " \x1b[31m[failed]\x1b[0m: result is " << result << " but should be " #op " " << r <<endl;     \
     }                                                                                                                   \
 
+/**
+  * @brief Prints full stack dump
+  * @param inpSt poiner to stack for dump
+  * @param reason reason why do you use dump (reason will be printed before dump)
+  */
 #define Stack_dump(inpSt, reason)\
 {\
     auto addr = (inpSt);\
@@ -46,21 +64,38 @@ using namespace std;
     cout << "-------------------------------------------------------" << "\n" <<endl;\
     }
 
+/**
+  * @brief Checks if stack is damaged
+  * @param inpSt poiner to stack for dump
+  * @param reason reason why do you use dump (reason will be printed before dump)
+  */
 #define ASSERT_OK(inpSt, reason) if(Stack_OK(inpSt) != 0) {Stack_dump(inpSt, reason); assert(!reason);}
 
+//-----------------------------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+/**
+ * @brief Stack structure
+ */
 struct Stack
 {
-    uint16_t canary1 = 0xBEDA;
-    unsigned count = 0;
-    unsigned capacity = 0;
-    long unsigned stk_sum = 0;
-    long unsigned dat_sum = 0;
-    unsigned *data = static_cast<unsigned*>(nullptr);
-    unsigned *dat_can1 = static_cast<unsigned*>(nullptr);
-    unsigned *dat_can2 = static_cast<unsigned*>(nullptr);
-    uint16_t canary2 = 0xBEDA;
+    uint16_t canary1 = 0xBEDA;                                    ///control element for penetration protection
+    unsigned count = 0;                                           ///stack count
+    unsigned capacity = 0;                                        ///stack volume
+    long unsigned stk_sum = 0;                                    ///stack structure checksum
+    long unsigned dat_sum = 0;                                    ///data array ckecksum
+    unsigned *data = static_cast<unsigned*>(nullptr);             ///data aray pointer
+    unsigned *dat_can1 = static_cast<unsigned*>(nullptr);         ///control element pointer
+    unsigned *dat_can2 = static_cast<unsigned*>(nullptr);         ///control element pointer
+    uint16_t canary2 = 0xBEDA;                                    ///control element for penetration protection
 };
 
+/**
+ * @brief Calculates control sum of the stack
+ * @param inpSt input stack
+ * @return control sum
+ */
 long unsigned calc_stk_sum(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -74,6 +109,11 @@ long unsigned calc_stk_sum(Stack *inpSt)
     return sum;
 }
 
+/**
+ * @brief Calculates control sum of the data aray
+ * @param inpSt input stack
+ * @return control sum
+ */
 long unsigned calc_dat_sum(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -84,18 +124,30 @@ long unsigned calc_dat_sum(Stack *inpSt)
     return sum;
 }
 
+/**
+ * @brief Writes checksum of the stack
+ * @param inpSt input stack
+ */
 void write_stk_sum(Stack *inpSt)
 {
     assert(inpSt != nullptr);
     inpSt->stk_sum = calc_stk_sum(inpSt);
 }
 
+/**
+ * @brief Writes checksum of the data aray
+ * @param inpSt input stack
+ */
 void write_dat_sum(Stack *inpSt)
 {
     assert(inpSt != nullptr);
     inpSt->dat_sum = calc_dat_sum(inpSt);
 }
 
+/**
+ * @brief Writes checksums of the stack and data aray
+ * @param inpSt input stack
+ */
 void write_control_sums(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -103,6 +155,11 @@ void write_control_sums(Stack *inpSt)
     write_stk_sum(inpSt);
 }
 
+/**
+ * @brief Quiet verification of the stack
+ * @param inpSt input stack
+ * @return 0 if evrething ok or error code
+ */
 int Stack_OK(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -126,6 +183,10 @@ int Stack_OK(Stack *inpSt)
         return 0;
 }
 
+/**
+ * @brief Creates new data aray
+ * @param inpSt input stack
+ */
 void create_new_data(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -140,7 +201,10 @@ void create_new_data(Stack *inpSt)
     inpSt->data = &(ptr[1]);
     inpSt->dat_can2 = &(ptr[2]);
 }
-
+/**
+ * @brief Creates new stack from inpSt
+ * @param inpSt input stack
+ */
 void StackCtor(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -151,6 +215,10 @@ void StackCtor(Stack *inpSt)
     write_control_sums(inpSt);
 }
 
+/**
+ * @brief Creates new stack from nothing
+ * @return new stack
+ */
 Stack StackNew()
 {
     Stack outSt;
@@ -158,6 +226,10 @@ Stack StackNew()
     return outSt;
 }
 
+/**
+ * @brief Poisons all data aray elements (assigns with 666)
+ * @param inpSt input stack
+ */
 void poison_dat(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -165,6 +237,10 @@ void poison_dat(Stack *inpSt)
         inpSt->dat_can1[i] = 666;
 }
 
+/**
+ * @brief Poisons all stack structure members (assigns with 666)
+ * @param inpSt
+ */
 void poison_stk(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -173,6 +249,10 @@ void poison_stk(Stack *inpSt)
         ptr[i] = 666;
 }
 
+/**
+ * @brief Destructes the stack
+ * @param inpSt input stack
+ */
 void StackDtor(Stack *inpSt)
 {
     poison_dat(inpSt);
@@ -180,6 +260,11 @@ void StackDtor(Stack *inpSt)
     poison_stk(inpSt);
 }
 
+/**
+ * @brief Expands stack (makes twice larger or twice smaller)
+ * @param inpSt input stack
+ * @param isExp 0 if you whant to decrease stack, else if you want to increase stack
+ */
 void expand_stk(Stack *inpSt, uint8_t isExp)
 {
     assert(inpSt != nullptr);
@@ -205,6 +290,11 @@ void expand_stk(Stack *inpSt, uint8_t isExp)
     inpSt->dat_can2 = &ptr[inpSt->capacity + 1];
 }
 
+/**
+ * @brief Pushes val to the top of the stack
+ * @param inpSt input stack
+ * @param val value to push
+ */
 void Push_back(Stack *inpSt, unsigned val)
 {
     assert(inpSt != nullptr);
@@ -217,6 +307,10 @@ void Push_back(Stack *inpSt, unsigned val)
     ASSERT_OK(inpSt, "Push_back_after");
 }
 
+/**
+ * @brief Pops element from the top of the stack
+ * @param inpSt input stack
+ */
 unsigned Pop_back(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -233,6 +327,10 @@ unsigned Pop_back(Stack *inpSt)
     return tmp;
 }
 
+/**
+ * @brief My version of stack dump
+ * @param inpSt input stack
+ */
 void My_dump(Stack *inpSt)
 {
     printf("cap= %d,    count= %d\n", inpSt->capacity, inpSt->count);
@@ -242,18 +340,33 @@ void My_dump(Stack *inpSt)
     puts("");
 }
 
+/**
+ * @brief Returns size of the stack
+ * @param inpSt input stack
+ * @return size of the stack
+ */
 unsigned StackSize(Stack *inpSt)
 {
     assert(inpSt != nullptr);
     return inpSt->count;
 }
 
+/**
+ * @brief Returns volume of the stack
+ * @param inpSt input stack
+ * @return capacity of the stack
+ */
 unsigned StackCapacity(Stack *inpSt)
 {
     assert(inpSt != nullptr);
     return inpSt->capacity;
 }
 
+/**
+ * @brief Returns top element of the stack without removing it
+ * @param inpSt input stack
+ * @return top element of the stack
+ */
 double StackTop(Stack *inpSt)
 {
     assert(inpSt != nullptr);
@@ -262,21 +375,15 @@ double StackTop(Stack *inpSt)
 
 int main()
 {
+    printf("# Stack_int v1.0 (c) Philipp Khristolyubov\n");
+
     Stack st = StackNew();
     Push_back(&st, 1);
     Push_back(&st, 2);
     Push_back(&st, 3);
-    Push_back(&st, 4);
-    Push_back(&st, 5);
-    Push_back(&st, 6);
-    Push_back(&st, 7);
-    UNITTEST(Pop_back(&st), ==, 7);
-    UNITTEST(Pop_back(&st), ==, 6);
-    UNITTEST(Pop_back(&st), ==, 5);
-    UNITTEST(Pop_back(&st), ==, 4);
+
     UNITTEST(Pop_back(&st), ==, 3);
     UNITTEST(Pop_back(&st), ==, 2);
-    UNITTEST(Pop_back(&st), ==, 6);
     UNITTEST(Pop_back(&st), ==, 0);
     return 0;
 }
